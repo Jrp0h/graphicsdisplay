@@ -25,6 +25,32 @@ class Color {
   static divide(col1: Color, col2: Color): Color {
     return new Color(col1.r / col2.r, col1.g / col2.g, col1.b / col2.b);
   }
+
+  static multiply(col1: Color, col2: Color): Color {
+    return new Color(col1.r * col2.r, col1.g * col2.g, col1.b * col2.b);
+  }
+}
+
+class Bitmap {
+  width: number;
+  height: number;
+
+  pixels: Array<Color>;
+
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+
+    this.pixels = [];
+
+    for (let i = 0; i < width * height; i++) {
+      this.pixels.push(new Color());
+    }
+  }
+
+  putPixel(x: number, y: number, col: Color): void {
+    this.pixels[x + y * this.width] = col;
+  }
 }
 
 class Canvas {
@@ -65,7 +91,6 @@ class Canvas {
         context!.fillRect(10 * x, 10 * y, 10, 10);
       }
     }
-
   }
 
   fadeIn(canvas: HTMLCanvasElement): void {
@@ -188,6 +213,59 @@ class Canvas {
       this.putPixel(Math.round(Math.cos(i) * radius) + x, Math.round(Math.sin(i) * radius) + y, col);
     }
   }
+
+  blit(src: Bitmap, srcX: number, srcY: number, width: number, height: number, canvasX: number, canvasY: number, col: Color | undefined = undefined): void {
+    for (let y = srcY; y < srcY + height; y++) {
+      for (let x = srcX; x < srcX + width; x++) {
+        if (col != undefined) {
+          this.pixels[(x - srcX + canvasX) + (y - srcY + canvasY) * this.width] = Color.multiply(Color.divide(src.pixels[x + y * src.width], new Color(255, 255, 255)), col);
+        }
+        else {
+          this.pixels[(x - srcX + canvasX) + (y - srcY + canvasY) * this.width] = src.pixels[x + y * src.width];
+        }
+      }
+    }
+  }
+
+  charAt(src: Bitmap, tkn: string, x: number, y: number, col: Color): void {
+    let charCode = tkn.charCodeAt(0);
+    let subtracted = charCode - 65;
+    let charY = 0;
+
+    if (subtracted > 25) {
+      charY = 1;
+      subtracted = charCode - 97;
+    }
+
+    this.blit(src, subtracted * 5, charY * 7, 5, 7, x, y, col);
+    // console.log((charCode - 65) * 5);
+  }
+
+  textAt(src: Bitmap, text: string, x: number, y: number, col: Color): void {
+    let steps = 0;
+    let maxChars = -1;
+
+    for (let i = 0; i < text.length; i++) {
+      let newX = i * (5 + 1) + x;
+
+      if (newX + (5 + 1) > this.width) {
+
+        if (maxChars == -1) {
+          maxChars = i;
+        }
+
+        if (i % maxChars == 0) {
+          steps++;
+          y += 7 + 1;
+        }
+
+        newX = (i - maxChars * steps) * (5 + 1) + x;
+      }
+
+      this.charAt(src, text.charAt(i), newX, y, col);
+    }
+  }
+
 }
 
 let htmlCanvas = document.querySelector("canvas") as HTMLCanvasElement;
@@ -195,11 +273,105 @@ let htmlCanvas = document.querySelector("canvas") as HTMLCanvasElement;
 let canvas = new Canvas(40, 40);
 
 canvas.clear(new Color(0, 255, 128));
-canvas.putPixel(10, 10, new Color(0, 0, 0));
+
+let bm = new Bitmap(125, 14);
+// a
+// översta raden
+bm.putPixel(0, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(1, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(2, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(3, 7 + 2, new Color(255, 255, 255));
+
+// Nästa rad
+bm.putPixel(4, 7 + 3, new Color(255, 255, 255));
+
+// Nästa rad
+bm.putPixel(1, 7 + 4, new Color(255, 255, 255));
+bm.putPixel(2, 7 + 4, new Color(255, 255, 255));
+bm.putPixel(3, 7 + 4, new Color(255, 255, 255));
+bm.putPixel(4, 7 + 4, new Color(255, 255, 255));
+
+// Nästa rad
+bm.putPixel(0, 7 + 5, new Color(255, 255, 255));
+bm.putPixel(4, 7 + 5, new Color(255, 255, 255));
+
+// Nästa rad
+bm.putPixel(1, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(2, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(3, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(4, 7 + 6, new Color(255, 255, 255));
+
+// b
+bm.putPixel(0 + 5 * 1, 7 + 0, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 1, 7 + 1, new Color(255, 255, 255));
+
+// nästa rad
+bm.putPixel(0 + 5 * 1, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(1 + 5 * 1, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(2 + 5 * 1, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(3 + 5 * 1, 7 + 2, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 1, 7 + 3, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 1, 7 + 3, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 1, 7 + 4, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 1, 7 + 4, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 1, 7 + 5, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 1, 7 + 5, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 1, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(1 + 5 * 1, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(2 + 5 * 1, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(3 + 5 * 1, 7 + 6, new Color(255, 255, 255));
+
+// c
+bm.putPixel(1 + 5 * 2, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(2 + 5 * 2, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(3 + 5 * 2, 7 + 2, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 2, 7 + 3, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 2, 7 + 3, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 2, 7 + 4, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 2, 7 + 5, new Color(255, 255, 255));
+
+bm.putPixel(1 + 5 * 2, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(2 + 5 * 2, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(3 + 5 * 2, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 2, 7 + 6, new Color(255, 255, 255));
+
+// d
+bm.putPixel(4 + 5 * 3, 7 + 0, new Color(255, 255, 255));
+
+bm.putPixel(4 + 5 * 3, 7 + 1, new Color(255, 255, 255));
+
+bm.putPixel(1 + 5 * 3, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(2 + 5 * 3, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(3 + 5 * 3, 7 + 2, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 3, 7 + 2, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 3, 7 + 3, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 3, 7 + 3, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 3, 7 + 4, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 3, 7 + 4, new Color(255, 255, 255));
+
+bm.putPixel(0 + 5 * 3, 7 + 5, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 3, 7 + 5, new Color(255, 255, 255));
+
+bm.putPixel(1 + 5 * 3, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(2 + 5 * 3, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(3 + 5 * 3, 7 + 6, new Color(255, 255, 255));
+bm.putPixel(4 + 5 * 3, 7 + 6, new Color(255, 255, 255));
+
+// canvas.putPixel(10, 10, new Color(0, 0, 0));
 // canvas.line(1, 1, 30, 30, new Color(0, 0, 0));
 
-canvas.circle(10, 10, 9, new Color(0, 0, 0));
-// canvas.fadeIn(htmlCanvas);
-canvas.draw(htmlCanvas);
+canvas.clear(new Color());
 
-// canvas.fadeOut(htmlCanvas);
+// har bara bokstäverna a, b och c i små bokstäver
+canvas.textAt(bm, "abcabcabcabcabcabcabcabcabcabc", 8, 0, new Color(128, 0, 255));
+canvas.draw(htmlCanvas);
